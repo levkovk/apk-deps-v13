@@ -99,3 +99,59 @@ def _relax(graph, name, left, queue):
         left[dep] -= 1
         if left[dep] == ZERO:
             queue.append(dep)
+
+
+def format_reverse(root, forward, skip):
+    """Обратные зависимости: кто зависит от пакета, по одному в строке."""
+    if skipped(root, skip):
+        return 'пакет исключен фильтром'
+    names = reverse_from(root, forward, skip)
+    if not names:
+        return 'обратных зависимостей нет'
+    return '\n'.join(names)
+
+
+def reverse_from(root, forward, skip):
+    """Пакеты, которые прямо или косвенно зависят от root."""
+    if skipped(root, skip):
+        return []
+    return _walk(root, _invert(forward, skip))
+
+
+def _invert(forward, skip):
+    """Развернуть ребра: зависимость -> пакеты, которым она нужна."""
+    rev = {}
+    for name, deps in forward.items():
+        if skipped(name, skip):
+            continue
+        _link(rev, name, deps, skip)
+    return rev
+
+
+def _link(rev, name, deps, skip):
+    """Добавить обратные ребра одного пакета."""
+    for dep in deps:
+        if skipped(dep, skip):
+            continue
+        rev.setdefault(dep, []).append(name)
+
+
+def _walk(root, graph):
+    """BFS от root по уже развернутым ребрам. Сам root не входит."""
+    seen = {root}
+    queue = deque([root])
+    found = []
+    while queue:
+        _take(queue, graph, seen, found)
+    return found
+
+
+def _take(queue, graph, seen, found):
+    """Забрать узел из очереди и поставить новых соседей."""
+    node = queue.popleft()
+    for dep in graph.get(node, []):
+        if dep in seen:
+            continue
+        seen.add(dep)
+        found.append(dep)
+        queue.append(dep)

@@ -4,7 +4,7 @@ import sys
 
 from src.config import ConfigError, parse_args
 from src.errors import DataError
-from src.graph import bfs_graph, format_graph
+from src.graph import bfs_graph, format_graph, format_reverse
 from src.load import load_forward
 
 EXIT_OK = 0
@@ -21,9 +21,18 @@ def main(argv=None):
     except (ConfigError, DataError) as err:
         print(f'ошибка: {err}', file=sys.stderr)
         return EXIT_FAIL
-    graph = bfs_graph(config.package, forward, config.filter_text)
-    print(format_graph(graph))
+    print(_text(config, forward))
     return EXIT_OK
+
+
+def _text(config, forward):
+    """Граф зависимостей или список обратных зависимостей."""
+    if config.reverse:
+        return format_reverse(
+            config.package, forward, config.filter_text,
+        )
+    graph = bfs_graph(config.package, forward, config.filter_text)
+    return format_graph(graph)
 
 
 if __name__ == '__main__':

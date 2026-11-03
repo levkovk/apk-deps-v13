@@ -40,8 +40,8 @@ class MainTest(unittest.TestCase):
             '--test',
         ])
         self.assertEqual(code, 0)
-        self.assertNotIn('цикл', out)
         self.assertIn('B -> D', out)
+        self.assertNotIn('цикл', out)
 
     def test_cycle(self):
         """Цикл A-B-C."""
@@ -51,6 +51,7 @@ class MainTest(unittest.TestCase):
             '--test',
         ])
         self.assertEqual(code, 0)
+        self.assertIn('C -> A', out)
         self.assertIn('цикл: A B C', out)
 
     def test_filter(self):
@@ -63,6 +64,29 @@ class MainTest(unittest.TestCase):
         ])
         self.assertEqual(code, 0)
         self.assertNotIn('D', out)
+        self.assertIn('A -> B', out)
+
+    def test_reverse(self):
+        """Пакеты, которые зависят от A, включая косвенные."""
+        code, out, _err = _run([
+            '--package', 'A',
+            '--repo', str(DATA / 'reverse.txt'),
+            '--test',
+            '--reverse',
+        ])
+        self.assertEqual(code, 0)
+        self.assertEqual(out.strip(), 'B\nC\nD')
+
+    def test_reverse_of_leaf(self):
+        """От D никто не зависит."""
+        code, out, _err = _run([
+            '--package', 'D',
+            '--repo', str(DATA / 'reverse.txt'),
+            '--test',
+            '--reverse',
+        ])
+        self.assertEqual(code, 0)
+        self.assertEqual(out.strip(), 'обратных зависимостей нет')
 
     def test_unknown(self):
         """Пакет, которого нет в файле."""

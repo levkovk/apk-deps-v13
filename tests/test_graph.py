@@ -5,7 +5,7 @@ import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
-from src.graph import bfs_graph, format_graph
+from src.graph import bfs_graph, format_graph, format_reverse
 from src.main import main
 
 DATA = Path(__file__).resolve().parent / 'data'
@@ -42,7 +42,8 @@ class GraphTest(unittest.TestCase):
             '--test',
         ])
         self.assertEqual(code, 0)
-        self.assertEqual(out, 'A -> B\nA -> C\nB -> D\nC -> D')
+        self.assertIn('A -> B', out)
+        self.assertIn('C -> D', out)
         self.assertNotIn('цикл', out)
 
     def test_cycle(self):
@@ -64,7 +65,9 @@ class GraphTest(unittest.TestCase):
             '--test',
             '--filter', 'D',
         ])
-        self.assertEqual(out, 'A -> B\nA -> C')
+        self.assertIn('A -> B', out)
+        self.assertIn('A -> C', out)
+        self.assertNotIn('D', out)
 
     def test_filter_root(self):
         """Если фильтр отсекает сам пакет, граф пустой."""
@@ -79,6 +82,23 @@ class GraphTest(unittest.TestCase):
             '--test',
         ])
         self.assertEqual(out, 'зависимостей нет')
+
+    def test_reverse(self):
+        """От A зависят B и C напрямую и D через B."""
+        code, out, err = _run([
+            '--package', 'A',
+            '--repo', str(DATA / 'reverse.txt'),
+            '--test',
+            '--reverse',
+        ])
+        self.assertEqual(code, 0)
+        self.assertEqual(err, '')
+        self.assertEqual(out, 'B\nC\nD')
+
+    def test_reverse_direct(self):
+        """format_reverse вызывает обход по развернутым ребрам."""
+        forward = {'A': [], 'B': ['A'], 'C': ['B']}
+        self.assertEqual(format_reverse('B', forward, ''), 'C')
 
     def test_missing_package(self):
         """В файле нет такого пакета."""

@@ -12,13 +12,16 @@ class ConfigError(Exception):
 class Config:
     """Настройки одного запуска."""
 
-    def __init__(self, package, repo, test, version, filter_text):
+    def __init__(
+        self, package, repo, test, version, filter_text, reverse,
+    ):
         """Запомнить уже проверенные параметры."""
         self.package = package
         self.repo = repo
         self.test = test
         self.version = version
         self.filter_text = filter_text
+        self.reverse = reverse
 
 
 _REAL_NAME = re.compile(r'^[a-z0-9][a-z0-9+_.-]*$')
@@ -69,6 +72,11 @@ def _parser():
         default='',
         help='Не учитывать пакеты с этой подстрокой в имени',
     )
+    parser.add_argument(
+        '--reverse',
+        action='store_true',
+        help='Показать пакеты, которые зависят от заданного',
+    )
     return parser
 
 
@@ -78,7 +86,9 @@ def _build(args):
     repo = _repo(args.repo, args.test)
     version = _version(args.version, args.test)
     filter_text = _filter(args.filter)
-    return Config(package, repo, args.test, version, filter_text)
+    return Config(
+        package, repo, args.test, version, filter_text, args.reverse,
+    )
 
 
 def _package(value, test):
