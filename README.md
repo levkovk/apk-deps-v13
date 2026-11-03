@@ -104,11 +104,41 @@ D
 на этапе 3: очередь, без рекурсии. Перед обходом ребра
 разворачиваются. Фильтр работает так же.
 
+## Этап 5. Диаграмма
+
+Сейчас программа печатает граф текстом PlantUML.
+Строка `"A" --> "B"` значит: A зависит от B.
+Текст начинается с `@startuml` и заканчивается `@enduml`.
+Его можно вставить на сайт plantuml.com или в редактор,
+который понимает PlantUML, и получить рисунок.
+
+Для трех пакетов Alpine 3.21, репозиторий
+`https://dl-cdn.alpinelinux.org/alpine/v3.21/main/x86_64/`:
+
+`musl` 1.2.5-r12 ни от чего не зависит, на диаграмме один узел.
+`zlib` 1.3.2-r1 зависит от `musl`.
+`alpine-baselayout` 3.6.8-r1 зависит от
+`alpine-baselayout-data` и от `/bin/sh`.
+`/bin/sh` — это не пакет. Его предоставляет `busybox-binsh`
+(в поле `p`, приоритет выше, чем у `dash-binsh`).
+Дальше `busybox-binsh` зависит от `busybox`,
+а `busybox` зависит от `musl`.
+
+У apk нет команды, которая рисует граф. Ближайшие команды:
+`apk info -d имя` показывает прямые зависимости,
+`apk info -r имя` показывает, кто зависит от пакета.
+Они печатают поле `D` как оно записано.
+У `zlib` это `so:libc.musl-x86_64.so.1`, а не имя `musl`.
+Программа ставит на диаграмму пакет `musl`, потому что
+в его поле `p` указана эта библиотека. Поэтому рисунок
+и вывод `apk info -d` отличаются: там имя библиотеки,
+здесь имя пакета, который ее предоставляет.
+
 ## Функции и настройки
 
 `parse_args` разбирает аргументы и проверяет каждый параметр.
 `format_config` собирает текст из пар ключ=значение.
-`main` проверяет параметры, строит граф и печатает его.
+`main` проверяет параметры и печатает диаграмму PlantUML.
 С флагом `--reverse` печатает обратные зависимости.
 Класс `Config` хранит уже проверенные значения.
 `ConfigError` — ошибка в параметре.
@@ -127,7 +157,9 @@ D
 `format_graph` печатает ребра и строку про цикл.
 `skipped` проверяет, попадает ли имя под фильтр.
 `format_reverse` печатает пакеты, которые зависят от заданного.
-Флаг `--reverse` включает этот режим.
+Флаг `--reverse` включает этот режим. Обход тот же, BFS,
+только ребра развернуты назад.
+`to_plantuml` собирает текст диаграммы PlantUML.
 
 ## Сборка и тесты
 
@@ -147,46 +179,60 @@ run.bat --package zlib --version 1.3.2-r1 --repo https://dl-cdn.alpinelinux.org/
 
 ## Примеры
 
-Цепочка из `tests/data/chain.txt`:
+Цепочка из `tests/data/chain.txt`. Сейчас это диаграмма:
 
 ```
 run.bat --package A --repo tests/data/chain.txt --test
 ```
 
 ```
-A -> B
-B -> C
+@startuml
+"A" --> "B"
+"B" --> "C"
+@enduml
 ```
 
-Ветвление из `tests/data/branch.txt` печатает четыре ребра
-и не пишет слово `цикл`. Цикл из `tests/data/cycle.txt`:
+На этапе 3 та же цепочка печаталась ребрами `A -> B` и `B -> C`.
+Цикл из `tests/data/cycle.txt` на диаграмме содержит ребро
+`"C" --> "A"`. На этапе 3 рядом писалась строка `цикл: A B C`.
+
+`musl` 1.2.5-r12:
 
 ```
-A -> B
-B -> C
-C -> A
-цикл: A B C
+@startuml
+"musl"
+@enduml
 ```
 
-Фильтр `D` на том же ветвлении убирает пакет `D`:
+`zlib` 1.3.2-r1:
 
 ```
-run.bat --package A --repo tests/data/branch.txt --test --filter D
+@startuml
+"zlib" --> "musl"
+@enduml
 ```
 
-```
-A -> B
-A -> C
-```
-
-Реальный пакет `alpine-baselayout` версии `3.6.8-r1`
-из репозитория Alpine 3.21 main x86_64:
+`alpine-baselayout` 3.6.8-r1:
 
 ```
-alpine-baselayout -> alpine-baselayout-data
-alpine-baselayout -> busybox-binsh
-busybox-binsh -> busybox
-busybox -> musl
+@startuml
+"alpine-baselayout" --> "alpine-baselayout-data"
+"alpine-baselayout" --> "busybox-binsh"
+"busybox-binsh" --> "busybox"
+"busybox" --> "musl"
+@enduml
+```
+
+Адрес репозитория для этих трех пакетов:
+
+```
+https://dl-cdn.alpinelinux.org/alpine/v3.21/main/x86_64/
+```
+
+Команда для `zlib`:
+
+```
+run.bat --package zlib --version 1.3.2-r1 --repo https://dl-cdn.alpinelinux.org/alpine/v3.21/main/x86_64/
 ```
 
 Обратные зависимости пакета `A` из `tests/data/reverse.txt`.
@@ -210,7 +256,8 @@ D
 so:libc.musl-x86_64.so.1
 ```
 
-У `musl` своих зависимостей нет: `зависимостей нет`.
+У `musl` поле `D` пустое, поэтому на этапе 2 было
+`зависимостей нет`. На диаграмме это один узел `musl`.
 
 На первом этапе те же параметры печатались парами:
 

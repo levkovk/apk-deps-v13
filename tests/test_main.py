@@ -30,7 +30,10 @@ class MainTest(unittest.TestCase):
             '--test',
         ])
         self.assertEqual(code, 0)
-        self.assertEqual(out.strip(), 'A -> B\nB -> C')
+        self.assertEqual(
+            out.strip(),
+            '@startuml\n"A" --> "B"\n"B" --> "C"\n@enduml',
+        )
 
     def test_branch(self):
         """Ветвление без цикла."""
@@ -40,7 +43,7 @@ class MainTest(unittest.TestCase):
             '--test',
         ])
         self.assertEqual(code, 0)
-        self.assertIn('B -> D', out)
+        self.assertIn('"B" --> "D"', out)
         self.assertNotIn('цикл', out)
 
     def test_cycle(self):
@@ -51,8 +54,8 @@ class MainTest(unittest.TestCase):
             '--test',
         ])
         self.assertEqual(code, 0)
-        self.assertIn('C -> A', out)
-        self.assertIn('цикл: A B C', out)
+        self.assertIn('"C" --> "A"', out)
+        self.assertIn('@startuml', out)
 
     def test_filter(self):
         """Фильтр убирает пакет D."""
@@ -64,7 +67,7 @@ class MainTest(unittest.TestCase):
         ])
         self.assertEqual(code, 0)
         self.assertNotIn('D', out)
-        self.assertIn('A -> B', out)
+        self.assertIn('"A" --> "B"', out)
 
     def test_reverse(self):
         """Пакеты, которые зависят от A, включая косвенные."""

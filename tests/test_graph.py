@@ -32,7 +32,10 @@ class GraphTest(unittest.TestCase):
         ])
         self.assertEqual(code, 0)
         self.assertEqual(err, '')
-        self.assertEqual(out, 'A -> B\nB -> C')
+        self.assertEqual(
+            out,
+            '@startuml\n"A" --> "B"\n"B" --> "C"\n@enduml',
+        )
 
     def test_branch(self):
         """Ромб не является циклом."""
@@ -42,8 +45,8 @@ class GraphTest(unittest.TestCase):
             '--test',
         ])
         self.assertEqual(code, 0)
-        self.assertIn('A -> B', out)
-        self.assertIn('C -> D', out)
+        self.assertIn('"A" --> "B"', out)
+        self.assertIn('"C" --> "D"', out)
         self.assertNotIn('цикл', out)
 
     def test_cycle(self):
@@ -53,9 +56,9 @@ class GraphTest(unittest.TestCase):
             '--repo', str(DATA / 'cycle.txt'),
             '--test',
         ])
-        self.assertIn('A -> B', out)
-        self.assertIn('C -> A', out)
-        self.assertIn('цикл: A B C', out)
+        self.assertIn('"A" --> "B"', out)
+        self.assertIn('"C" --> "A"', out)
+        self.assertTrue(out.startswith('@startuml'))
 
     def test_filter(self):
         """Пакет с подстрокой фильтра не попадает в граф."""
@@ -65,8 +68,8 @@ class GraphTest(unittest.TestCase):
             '--test',
             '--filter', 'D',
         ])
-        self.assertIn('A -> B', out)
-        self.assertIn('A -> C', out)
+        self.assertIn('"A" --> "B"', out)
+        self.assertIn('"A" --> "C"', out)
         self.assertNotIn('D', out)
 
     def test_filter_root(self):
@@ -81,7 +84,7 @@ class GraphTest(unittest.TestCase):
             '--repo', str(DATA / 'chain.txt'),
             '--test',
         ])
-        self.assertEqual(out, 'зависимостей нет')
+        self.assertEqual(out, '@startuml\n"C"\n@enduml')
 
     def test_reverse(self):
         """От A зависят B и C напрямую и D через B."""
