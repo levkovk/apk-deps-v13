@@ -2,9 +2,10 @@
 
 import sys
 
-from src.apk_index import direct_text, load_package
 from src.config import ConfigError, parse_args
 from src.errors import DataError
+from src.graph import bfs_graph, format_graph
+from src.load import load_forward
 
 EXIT_OK = 0
 EXIT_FAIL = 1
@@ -16,21 +17,13 @@ def main(argv=None):
         argv = sys.argv[1:]
     try:
         config = parse_args(argv)
-        package = _load(config)
+        forward = load_forward(config)
     except (ConfigError, DataError) as err:
         print(f'ошибка: {err}', file=sys.stderr)
         return EXIT_FAIL
-    print(direct_text(package))
+    graph = bfs_graph(config.package, forward, config.filter_text)
+    print(format_graph(graph))
     return EXIT_OK
-
-
-def _load(config):
-    """Прочитать пакет из репозитория Alpine."""
-    if config.test:
-        raise DataError(
-            'для зависимостей нужен URL репозитория, без --test',
-        )
-    return load_package(config.repo, config.package, config.version)
 
 
 if __name__ == '__main__':
