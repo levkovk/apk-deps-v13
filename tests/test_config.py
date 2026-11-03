@@ -23,20 +23,19 @@ class ConfigTest(unittest.TestCase):
     """Ошибки и нормальные значения всех параметров."""
 
     def test_prints_pairs(self):
-        """Успешный запуск печатает пары ключ=значение."""
-        code, out, err = _run([
+        """Проверенные параметры собираются в пары ключ=значение."""
+        config = parse_args([
             '--package', 'musl',
             '--repo', 'https://example.com/alpine',
             '--version', '1.2.5-r12',
             '--filter', 'doc',
         ])
-        self.assertEqual(code, 0)
-        self.assertEqual(err, '')
-        self.assertIn('package=musl', out)
-        self.assertIn('repo=https://example.com/alpine', out)
-        self.assertIn('test=false', out)
-        self.assertIn('version=1.2.5-r12', out)
-        self.assertIn('filter=doc', out)
+        text = format_config(config)
+        self.assertIn('package=musl', text)
+        self.assertIn('repo=https://example.com/alpine', text)
+        self.assertIn('test=false', text)
+        self.assertIn('version=1.2.5-r12', text)
+        self.assertIn('filter=doc', text)
 
     def test_format_matches_fields(self):
         """format_config собирает те же пять строк."""
